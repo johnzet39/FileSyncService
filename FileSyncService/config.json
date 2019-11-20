@@ -1,0 +1,6 @@
+{
+  "folder": "d:\\",
+  "source": "epsg.properties",
+  "destination": "\\\\10.230.241.77\\d$\\TEMP\\test.properties",
+  "logfile": "log_service.log"
+}
