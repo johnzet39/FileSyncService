@@ -29,5 +29,7 @@ namespace FileSyncService
         public string source { get; set; }
         public string destination { get; set; }
         public string logfile { get; set; }
+        public int timeout { get; set; }
+        public int retry_count { get; set; }
     }
 }

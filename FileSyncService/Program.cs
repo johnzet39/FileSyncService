@@ -14,12 +14,17 @@ namespace FileSyncService
         /// </summary>
         static void Main()
         {
+#if(!DEBUG)
             ServiceBase[] ServicesToRun;
             ServicesToRun = new ServiceBase[]
             {
                 new Service1()
             };
             ServiceBase.Run(ServicesToRun);
+
+#else
+            Service1 myServ = new Service1();
+#endif
         }
     }
 }

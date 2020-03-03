@@ -22,7 +22,9 @@ namespace FileSyncService
             this.CanStop = true;
             this.CanPauseAndContinue = true;
             this.AutoLog = true;
+
             System.IO.Directory.SetCurrentDirectory(System.AppDomain.CurrentDomain.BaseDirectory);
+            OnStart(new string[] { });
         }
 
         protected override void OnStart(string[] args)
@@ -49,6 +51,8 @@ namespace FileSyncService
         string _source;
         string _destination;
         string _logfile;
+        int _timeout;
+        int _retry_count;
 
         object obj = new object();
         bool enabled = true;
@@ -59,9 +63,12 @@ namespace FileSyncService
             _source = serializer.Configdata.source;
             _logfile = serializer.Configdata.logfile;
             _destination = serializer.Configdata.destination;
+            _timeout = serializer.Configdata.timeout;
+            _retry_count = serializer.Configdata.retry_count;
 
             watcher = new FileSystemWatcher(_folder);
             watcher.Filter = _source;
+            //watcher.WaitForChanged(WatcherChangeTypes.All, _timeout);
             watcher.Changed += Watcher_Changed;
         }
 
@@ -70,7 +77,7 @@ namespace FileSyncService
             watcher.EnableRaisingEvents = true;
             while (enabled)
             {
-                Thread.Sleep(1000);
+                Thread.Sleep(_timeout);
             }
         }
         public void Stop()
@@ -92,7 +99,14 @@ namespace FileSyncService
             }
             catch (Exception ex)
             {
-                RecordEntry(ex.Message, "");
+                try
+                {
+                    RecordEntry(ex.Message, "");
+                }
+                catch
+                {
+
+                }
             }
             finally
             {
@@ -102,15 +116,25 @@ namespace FileSyncService
 
         private void Copy(string filepath, string destination)
         {
-            try
+            int cnt = _retry_count;
+            do
             {
-                File.Copy(filepath, destination, true);
-                RecordEntry("был скопирован", filepath);
-            }
-            catch (Exception ex)
-            {
-                RecordEntry("НЕ был скопирован: " + ex.Message, filepath);
-            }
+                --cnt;
+                try
+                {
+                    Thread.Sleep(_timeout);
+                    File.Copy(filepath, destination, true);
+                    RecordEntry("был скопирован", filepath);
+                    cnt = 0;
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    RecordEntry($"НЕ был скопирован: {_retry_count - cnt}/{_retry_count}" + ex.Message, filepath);
+                    Thread.Sleep(_timeout);
+                }
+            } while (cnt > 0);
+
         }
 
         private void RecordEntry(string fileEvent, string filePath)
@@ -119,9 +143,17 @@ namespace FileSyncService
             {
                 using (StreamWriter writer = new StreamWriter(_logfile, true))
                 {
-                    writer.WriteLine(String.Format("{0} > {1} {2}",
-                        DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"), filePath, fileEvent));
-                    writer.Flush();
+                    try
+                    {
+                        writer.WriteLine(String.Format("{0} > {1} {2}",
+                            DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"), filePath, fileEvent));
+                        writer.Flush();
+                    }
+                    finally
+                    {
+                        writer.Dispose();
+                        writer.Close();
+                    }
                 }
             }
         }

@@ -1,6 +1,8 @@
 {
-  "folder": "d:\\",
-  "source": "epsg.properties",
-  "destination": "\\\\10.230.241.77\\d$\\TEMP\\test.properties",
-  "logfile": "log_service.log"
+  "folder": "d:\\TEMP\\tester\\",
+  "source": "1.csv",
+  "destination": "d:\\TEMP\\tester\\2.csv",
+  "logfile": "log_service.log",
+  "timeout": "5000",
+  "retry_count": "3"
 }
